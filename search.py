@@ -5,6 +5,7 @@ from networkx.readwrite import read_graph6_list, parse_graph6
 from itertools import combinations, imap
 from subprocess import Popen, PIPE
 from multiprocessing import Pool
+from math import ceil
 
 
 
@@ -158,7 +159,7 @@ def certify_non_kblock(g, block, k):
 def mao_kblock(g, k, s):
     o = mao(g, s)
     # assert is_mao(g, s, o)
-    candidate = o[-(k+1)::]
+    candidate = o[-(k)::]
     # assert len(kp1_block) == k+1
     result = certify_non_kblock(g, candidate, k=k)
     if result:
@@ -220,6 +221,8 @@ def single_kb1p32(g6):
     # d >= 3k/2
     # or d > 3k/2 - 1
     k = int(2 * (d / 3.0))
+    if node_connectivity(g) >= k:
+    	return
     def chk():
         for candidates in combinations(g.nodes_iter(),k+1):
             if not certify_non_kblock(g, candidates, k+1):
@@ -233,9 +236,8 @@ def single_kb1p32(g6):
 def single_mao_kb1p32(g6):
     g = parse_graph6(g6)
     d = min(g.degree().viewvalues())
-    # d >= 3k/2
     # or d > 3k/2 - 1
-    k = int(2 * (d / 3.0))
+    k = int(ceil(2 * ((d+1) / 3.0)) - 1)
     result = mao_kblock(g, k+1, g.nodes_iter().next())
     if result:
         result['g'] = g6
@@ -300,12 +302,16 @@ def main(argv):
     # Verm2
     # task(['-Ct', '-d2'], xrange(1,14), single_all_mao_kp1b)
 
+    # Verm3
+    # task(['-Ct', '-d2'], xrange(1,14), single_kp1b)
+
     # Verm4
     # task(['-C', '-d2'], xrange(1,14), single_kb1p32)
+    # task(['-C', '-d4'], xrange(1,14), single_kb1p32)
 
     # [Verm5] Bilden die letzten k+1 Knoten einer jeden MAO eines Graphen mit
     # Minimalgrad > 3k/2 -1 einen (k+1)-block?
-    # task(['-C', '-d2'], xrange(1,14), single_mao_kb1p32)
+    task(['-C', '-d2'], xrange(1,14), single_mao_kb1p32)
 
     # [Verm6] Gibt es für jeden Graphen mit Minimalgrad > 3k/2 -1 eine MAO
     # deren letzten k+1 Knoten einen (k+1)-block bilden?
@@ -314,7 +320,7 @@ def main(argv):
     # [Verm7] Verm5 wenn der Graph zusätzlich k-connected ist
 
     # [Verm8] Verm6 wenn der Graph zusätzlich k-connected ist
-    task(['-C', '-d2'], xrange(1,14), single_maos_connected_kb1p32)
+    # task(['-C', '-d2'], xrange(1,14), single_maos_connected_kb1p32)
 
 
     
