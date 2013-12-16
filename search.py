@@ -7,41 +7,6 @@ from subprocess import Popen, PIPE
 from multiprocessing import Pool
 from math import ceil
 
-
-
-def get_triangles(g):
-    for n1 in g:
-        neighbors1 = set(g[n1])
-        for n2 in filter(lambda x: x>n1, neighbors1):
-            neighbors2 = set(g[n2])
-            common = neighbors1 & neighbors2
-            for n3 in filter(lambda x: x>n2, common):
-                yield n1,n2,n3
-
-def gen(n,m):
-    return gnm_random_graph(n,m)
-
-def has_triangles(g):
-    return trace(adjacency_matrix(g)**3) > 1e-10
-
-from random import choice
-def remove_triangles(g, triangles=None):
-    c = g.copy()
-    while True:
-        has_triangles = False
-        for (n1, n2, n3) in triangles if triangles else get_triangles(c):
-            has_triangles = True
-            candidates = [n1, n2, n3]
-            d1 = choice(candidates)
-            candidates.remove(d1)
-            d2 = choice(candidates)
-            c.remove_edge(d1,d2)
-            # print 'removing edge %s %s' % (n1, n2)
-            break
-        if not has_triangles:
-            return c
-
-
 def mao(graph, s):
     from collections import defaultdict
     m = [s]
