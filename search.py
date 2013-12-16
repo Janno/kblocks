@@ -2,7 +2,7 @@ from networkx.generators.random_graphs import gnm_random_graph
 from networkx.algorithms import local_node_connectivity, node_connectivity, triangles
 from networkx.linalg import adjacency_matrix
 from networkx.readwrite import read_graph6_list, parse_graph6
-from itertools import combinations, imap
+from itertools import combinations, imap, permutations
 from subprocess import Popen, PIPE
 from multiprocessing import Pool
 from math import ceil
@@ -93,7 +93,7 @@ def mao(graph, s):
         return hi
 
     while len(m) < len(graph):
-        v = L[hi].pop() 
+        v = L[hi].pop()
         del V[v]
         m.append(v)
 
@@ -110,38 +110,16 @@ def mao(graph, s):
 
     return m
 
-def is_mao(g, s, m):
-    # necessary, not sufficient
+def is_mao(g, m):
+    if len(m) < len(g):
+        return False
     for i, v in enumerate(m):
         prev = set(m[:i])
         v_edges = prev.intersection(g[v].viewkeys())
         for u in m[i+1:]:
-            if prev.intersection(g[u].viewkeys()) > v_edges:
+            if len(prev.intersection(g[u].viewkeys())) > len(v_edges):
                 return False
     return True
-
-
-
-def unweighted_ma_ordering(graph, s):
-    """Return a maximum adjacency ordering of the nodes, starting with s. Every edge is assumed to have weight 1.
-       This function takes O(n+m) time."""
-    queue = [[s]]
-    r = dict((v,0) for v in graph.nodes_iter())
-    seen = set()
-    for i in xrange(len(graph)):
-        v = None
-        while v == None or v in seen:
-            v = queue[-1].pop()
-            if queue[-1] == []: queue.pop()
-        seen.add(v)
-        assert v != None
-        yield v
-        #if v in graph.nodes():
-        for u, edges in graph[v].iteritems():
-            r[u] = r[u] + len(edges)
-            while len(queue) <= r[u]: 
-                queue.append([])
-            queue[r[u]].append(u)
 
 def read_graph6_iter(fname):
     with open(fname, 'r') as f:
@@ -158,7 +136,7 @@ def certify_non_kblock(g, block, k):
 
 def mao_kblock(g, k, s):
     o = mao(g, s)
-    # assert is_mao(g, s, o)
+    # assert is_mao(g, o)
     candidate = o[-(k)::]
     # assert len(kp1_block) == k+1
     result = certify_non_kblock(g, candidate, k=k)
@@ -197,6 +175,42 @@ def single_all_mao_kp1b(g6):
             break
     if not starters:
         return {'g':g6, 'd':d, 'k':k}
+
+# Verm2, try ALL maos
+def single_ALL_mao_kp1b(g6):
+    g = parse_graph6(g6)
+    d = min(g.degree().viewvalues())
+    # d >= k+1, take maximal k
+    k = d-1
+    if k < 2:
+        return
+    last = None
+    for l in permutations(g.nodes_iter(), len(g)):
+        if is_mao(g,l):
+            last = l
+            if not certify_non_kblock(g, l[-(k+1):], k+1):
+                return 
+    return {'g': g6, 'd': d, 'k': k, 's': s, 'last': last}
+
+
+# Try any mao but try all k+1-long sub sequences
+def single_mao_all_kp1b(g6):
+    g = parse_graph6(g6)
+    d = min(g.degree().viewvalues())
+    # d >= k+1, take maximal k
+    k = d-1
+    s = g.nodes_iter().next()
+    m = mao(g, s)
+    for i in xrange(0, len(g)-(k+1)):
+        result = certify_non_kblock(g, m[i:i+k+1], k+1)
+        if not result:
+            return
+    # all are non-k+1-blocks 
+    result['g'] = g6
+    result['k'] = k
+    result['d'] = d
+    return result
+
     
 # Verm3
 def single_kp1b(g6):
@@ -302,6 +316,12 @@ def main(argv):
     # Verm2
     # task(['-Ct', '-d2'], xrange(1,14), single_all_mao_kp1b)
 
+    # Verm2, try all maos
+    task(['-Ct', '-d2'], xrange(1,14), single_ALL_mao_kp1b)
+
+    # Verm2, try some mao and try all k+1 long subsequences
+    # task(['-Ct', '-d2'], xrange(1,14), single_mao_all_kp1b)
+
     # Verm3
     # task(['-Ct', '-d2'], xrange(1,14), single_kp1b)
 
@@ -311,7 +331,7 @@ def main(argv):
 
     # [Verm5] Bilden die letzten k+1 Knoten einer jeden MAO eines Graphen mit
     # Minimalgrad > 3k/2 -1 einen (k+1)-block?
-    task(['-C', '-d2'], xrange(1,14), single_mao_kb1p32)
+    # task(['-C', '-d2'], xrange(1,14), single_mao_kb1p32)
 
     # [Verm6] Gibt es für jeden Graphen mit Minimalgrad > 3k/2 -1 eine MAO
     # deren letzten k+1 Knoten einen (k+1)-block bilden?
