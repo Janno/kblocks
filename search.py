@@ -2,9 +2,6 @@ from networkx.generators.random_graphs import gnm_random_graph
 from networkx.algorithms import local_node_connectivity, node_connectivity, triangles
 from networkx.linalg import adjacency_matrix
 from networkx.readwrite import read_graph6_list, parse_graph6
-from itertools import combinations, imap, permutations
-from subprocess import Popen, PIPE
-from multiprocessing import Pool
 from math import ceil
 
 from mao import mao, is_mao
@@ -59,7 +56,7 @@ def single_all_mao_kp1b(g6):
     if not starters:
         return {'g':g6, 'd':d, 'k':k}
 
-# Verm2, try ALL maos
+# Verm2, try ALL maos in a stupid way
 def single_ALL_mao_kp1b(g6):
     g = parse_graph6(g6)
     d = min(g.degree().viewvalues())
@@ -179,51 +176,12 @@ def single_maos_connected_kb1p32(g6):
     if not starters:
         return {'g':g6, 'd':d, 'k':k}
 
-def task(geng_params, nrange, f, P=None):
-    if not P:
-        P = Pool()
-    for n in nrange:
-        print ' '*20,
-        print '\rn=%d' % n,
-        p = Popen(['geng',] + geng_params + ['%d' % n], stdout=PIPE, stderr=open('/dev/null', 'w'))
-        #with open("/tmp/graph%s" % n, 'r') as f:
-        s = 2**(n/2)
-        for i, o in enumerate(P.imap_unordered(f, imap(str.strip, p.stdout), chunksize=s)):
-            if o:
-                print
-                print o
-            if i % s == 0:
-                print 'n=%d, %d%s\r' % (n, i, ' '*20),
-
 def main(argv):
-    # Verm2
-    # task(['-Ct', '-d2'], xrange(1,14), single_all_mao_kp1b)
-
-    # Verm2, try all maos
-    task(['-Ct', '-d2'], xrange(1,14), single_ALL_mao_kp1b)
-
-    # Verm2, try some mao and try all k+1 long subsequences
-    # task(['-Ct', '-d2'], xrange(1,14), single_mao_all_kp1b)
-
-    # Verm3
-    # task(['-Ct', '-d2'], xrange(1,14), single_kp1b)
-
-    # Verm4
-    # task(['-C', '-d2'], xrange(1,14), single_kb1p32)
-    # task(['-C', '-d4'], xrange(1,14), single_kb1p32)
-
-    # [Verm5] Bilden die letzten k+1 Knoten einer jeden MAO eines Graphen mit
-    # Minimalgrad > 3k/2 -1 einen (k+1)-block?
-    # task(['-C', '-d2'], xrange(1,14), single_mao_kb1p32)
-
-    # [Verm6] Gibt es für jeden Graphen mit Minimalgrad > 3k/2 -1 eine MAO
-    # deren letzten k+1 Knoten einen (k+1)-block bilden?
-    # task(['-C', '-d2'], xrange(1,14), single_maos_kb1p32)
-
-    # [Verm7] Verm5 wenn der Graph zusätzlich k-connected ist
-
-    # [Verm8] Verm6 wenn der Graph zusätzlich k-connected ist
-    # task(['-C', '-d2'], xrange(1,14), single_maos_connected_kb1p32)
+    from sys import stdin
+    for g6 in stdin:
+        x = single_ALL_mao_kp1b(g6)
+        if x:
+            print x
 
 
     
