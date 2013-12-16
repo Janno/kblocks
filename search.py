@@ -86,11 +86,6 @@ def is_mao(g, m):
                 return False
     return True
 
-def read_graph6_iter(fname):
-    with open(fname, 'r') as f:
-        for line in f.readlines():
-            yield parse_graph6(line)
-
 def certify_non_kblock(g, block, k):
     for u,v in combinations(block, 2):
         if g.has_edge(u,v):
