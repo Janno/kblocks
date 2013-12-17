@@ -1,10 +1,19 @@
+"""Usage: search.py [-p]
+
+Options:
+    -p, --progress      Print absolute progress about once every 5 seconds
+    -h, --help          Show this
+"""
 from networkx.generators.random_graphs import gnm_random_graph
 from networkx.algorithms import local_node_connectivity, node_connectivity, triangles
 from networkx.linalg import adjacency_matrix
 from networkx.readwrite import read_graph6_list, parse_graph6
+from docopt import docopt
+from itertools import permutations, combinations
 from math import ceil
 
 from mao import mao, is_mao
+
 
 def certify_non_kblock(g, block, k):
     for u,v in combinations(block, 2):
@@ -70,7 +79,7 @@ def single_ALL_mao_kp1b(g6):
             last = l
             if not certify_non_kblock(g, l[-(k+1):], k+1):
                 return 
-    return {'g': g6, 'd': d, 'k': k, 's': s, 'last': last}
+    return {'g': g6, 'd': d, 'k': k, 'last': last}
 
 
 # Try any mao but try all k+1-long sub sequences
@@ -178,14 +187,23 @@ def single_maos_connected_kb1p32(g6):
 
 def main(argv):
     from sys import stdin
-    for g6 in stdin:
+    opts = docopt(__doc__, argv=argv)
+
+    from time import clock
+    t = clock()
+    p = opts['--progress']
+    for i, g6_ in enumerate(stdin):
+        g6 = g6_.strip()
         x = single_ALL_mao_kp1b(g6)
         if x:
             print x
-
+        if p and clock()-t > 5:
+            t = clock()
+            print '\r', i,
+    print '\r', i
 
     
 
 if __name__ == '__main__':
     from sys import argv
-    main(argv)
+    main(argv[1:])
