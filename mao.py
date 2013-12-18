@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import permutations
 
 def is_mao(g, m):
     if len(m) < len(g):
@@ -15,11 +16,11 @@ class MaoState(object):
     def __init__(self, g, L=None, V=None, hi=None):
         if not L:
             L = defaultdict(list)
-            L[0].extend(graph.nodes_iter()) 
+            L[0].extend(g.nodes_iter()) 
         if not V:
             V = {v:(0, i) for i,v in enumerate(L[0])}
         if not hi:
-            hi = 1
+            hi = 0
         self.L = L 
         self.V = V
         self.hi = hi
@@ -27,47 +28,91 @@ class MaoState(object):
     def copy(self):
         L_new = defaultdict(list)
         for k, l in self.L.iteritems():
-            L_new[k] = l[:]
-        return MaoState(g, L_new, dict(self.V.iteritems()), hi)
+            if l:
+                L_new[k] = l[:]
+        return MaoState(g, L_new, dict(self.V.iteritems()), self.hi)
 
     def update_hi(self):
-        while not L[self.hi] and self.hi > 0:
+        while not self.L[self.hi] and self.hi > 0:
             self.hi = self.hi - 1
 
     def push(self, u):
-        # TODO this is O(m log m) and this is called O(n) times. fook.
+        # TODO this is at least O(m log m) and it is called O(n) times. fook.
         # TODO why do I even sort this?
-        for v in sorted(graph[u], key=self.V.get, reverse=True):
+        for v in sorted(g[u], key=self.V.get, reverse=True):
             # print '\tneighbour', v
             if not v in self.V:
                 continue
             hp, tp = self.V[v]
-            self.hi = max(self.hi, hp+1)
+            # print '\tposition', hp, tp
             # swap v last element in current list L[hp], if necessary
-            if tp < len(L[hp])-1:
-                v_last = self.L[hp][-1]
-                self.V[v_last] = (hp, tp) 
-                self.L[hp][tp], self.L[hp][-1] = self.L[hp][-1], self.L[hp][tp]
-                tp = len(self.L[hp])-1 
+            self.movetoend(hp, tp)
             # append v to higher list
             self.V[v] = hp+1, len(self.L[hp+1])
             self.L[hp+1].append(v)
+            self.hi = max(self.hi, hp+1)
             # delete old occurence of v which is now at the last index in L[hp]
-            del self.L[hp][tp]
+            # print '\tdeleting from', hp
+            self.L[hp].pop()
+            # del self.L[hp][tp]
 
     def candidates(self):
-        return self.L[self.hi]
+        return xrange(len(self.L[self.hi]))
+
+    def show(self):
+        for hp in sorted(self.L.iterkeys(), reverse=True):
+            print 'L', hp, self.L[hp]
+        print 'V', self.V
+
+    def swap(self, hp, tp1, tp2):
+        v1, v2 = self.L[hp][tp1], self.L[hp][tp2]
+        self.V[v1], self.V[v2] = self.V[v2], self.V[v1]
+        self.L[hp][tp1], self.L[hp][tp2] = self.L[hp][tp2], self.L[hp][tp1]
+
+    def movetoend(self, hp, tp):
+        if tp < len(self.L[hp])-1:
+            # print '\tswapping %s with last element in %s' % (tp, hp)
+            self.swap(hp, tp, len(self.L[hp])-1)
 
     def step(self, i):
-        v = self.L[self.hi][i]
-        del self.L[self.hi][i]
+        self.movetoend(self.hi, i)
+        v = self.L[self.hi].pop()
         del self.V[v]
 
         self.update_hi()
 
         # if we are not done we need to update L
-        if L[hi]:
-            hi_new = push(v)
+        if self.L[self.hi]:
+            self.push(v)
+        return v
+
+    def check(self):
+        for hp, l in self.L.iteritems():
+            for tp, v in enumerate(l):
+                assert (hp, tp) == self.V[v], v
+
+def all_maos(g):
+    # list of pairs of ((partial) mao, state)
+    if len(g) == 0:
+        yield ()
+    else: 
+        todo = [((), MaoState(g)),]
+        while todo:
+            m, s = todo.pop()
+            for c in s.candidates():
+                s_ = s.copy()
+                v = s_.step(c)
+                m_ = m+(v,)
+                if len(m_) == len(g):
+                    yield m_ 
+                else:
+                    todo.append((m_, s_))
+        
+def all_maos_slow(g):
+    for l in permutations(g.nodes_iter(), len(g)):
+        if is_mao(g,l):
+            yield l
+
 
 def mao(graph, s):
     m = [s]
@@ -81,7 +126,7 @@ def mao(graph, s):
     h = lambda v: V[v][0]
     t = lambda v: V[v][1]
 
-    def showL():
+    def show():
         for hp in sorted(L.iterkeys(), reverse=True):
             print hp, L[hp]
     
@@ -105,7 +150,7 @@ def mao(graph, s):
             L[hp+1].append(v)
             # delete old occurence of v which is now at the last index in L[hp]
             del L[hp][tp]
-        # showL() 
+        # show() 
         # print V
         return hi_new
     # transfer all nodes with edges to s to L[1]
@@ -135,3 +180,21 @@ def mao(graph, s):
             hi = max(hi, hi_new)
 
     return m
+
+
+if __name__=='__main__':
+    from networkx import parse_graph6
+    from sys import stdin
+
+    for l_ in stdin:
+        l = l_.strip()
+        g = parse_graph6(l)
+        m1 = list(all_maos(g))
+        m2 = list(all_maos_slow(g))
+        m1.sort()
+        m2.sort()
+        if not set(m1) == set(m2):
+            print l
+            print len(m1)
+            print len(m2)
+
