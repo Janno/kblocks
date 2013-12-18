@@ -12,7 +12,7 @@ from docopt import docopt
 from itertools import permutations, combinations
 from math import ceil
 
-from mao import mao, is_mao
+from mao import mao, is_mao, all_maos
 
 
 def certify_non_kblock(g, block, k):
@@ -65,7 +65,7 @@ def single_all_mao_kp1b(g6):
     if not starters:
         return {'g':g6, 'd':d, 'k':k}
 
-# Verm2, try ALL maos in a stupid way
+# Verm2, try ALL maos
 def single_ALL_mao_kp1b(g6):
     g = parse_graph6(g6)
     d = min(g.degree().viewvalues())
@@ -74,12 +74,10 @@ def single_ALL_mao_kp1b(g6):
     if k < 2:
         return
     last = None
-    for l in permutations(g.nodes_iter(), len(g)):
-        if is_mao(g,l):
-            last = l
-            if not certify_non_kblock(g, l[-(k+1):], k+1):
-                return 
-    return {'g': g6, 'd': d, 'k': k, 'last': last}
+    for l in all_maos(g):
+        if not certify_non_kblock(g, l[-(k+1):], k+1):
+            return 
+    return {'g': g6, 'd': d, 'k': k}
 
 
 # Try any mao but try all k+1-long sub sequences
@@ -200,7 +198,8 @@ def main(argv):
         if p and clock()-t > 5:
             t = clock()
             print '\r', i,
-    print '\r', i
+    if p:
+        print '\r', i
 
     
 
