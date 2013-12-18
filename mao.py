@@ -21,6 +21,7 @@ class MaoState(object):
             V = {v:(0, i) for i,v in enumerate(L[0])}
         if not hi:
             hi = 0
+        self.g = g
         self.L = L 
         self.V = V
         self.hi = hi
@@ -30,7 +31,7 @@ class MaoState(object):
         for k, l in self.L.iteritems():
             if l:
                 L_new[k] = l[:]
-        return MaoState(g, L_new, dict(self.V.iteritems()), self.hi)
+        return MaoState(self.g, L_new, dict(self.V.iteritems()), self.hi)
 
     def update_hi(self):
         while not self.L[self.hi] and self.hi > 0:
@@ -39,7 +40,7 @@ class MaoState(object):
     def push(self, u):
         # TODO this is at least O(m log m) and it is called O(n) times. fook.
         # TODO why do I even sort this?
-        for v in sorted(g[u], key=self.V.get, reverse=True):
+        for v in sorted(self.g[u], key=self.V.get, reverse=True):
             # print '\tneighbour', v
             if not v in self.V:
                 continue
