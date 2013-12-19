@@ -1,0 +1,8 @@
+Requirements:
+    Python Modules
+    - networkx
+    - docopt
+
+Recommended:
+    - nauty (geng), to generate graph6 input
+    - pypy, to achieve termination before the end of the universe
