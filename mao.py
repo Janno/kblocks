@@ -182,6 +182,42 @@ def mao(graph, s):
 
     return m
 
+class Tree(object):
+    def __init__(self, tag, children=None):
+        if not children: 
+            children = []
+        self.tag = tag
+        self.children = children
+    def is_leaf(self):
+        return len(self.children) == 0
+
+def maotree(g, m):
+    # TODO fix this ****
+    from networkx import Graph
+    t = Tree()
+    g_ = Graph()
+    comps = []
+    comp_of = {}
+    for i, u in reversed(enumerate(m)):
+        t = Tree(u, comps)
+        merge = set()
+        for v in g[u]:
+            if v in g_:
+                g_.add_edge(u,v)
+                merge.add(comp_of(v))
+        comps_new = [[u,],]
+        comp_of[u] = 0
+        for c in merge:
+            comps_new[0].extend(comps[c])
+            for v in comps[c]:
+                comp_of[v] = 0
+        for c in set(xrange(len(comps))) - merge:
+            for v in comps[c]:
+                comp_of[v] = len(comps_new)
+            comps_new.append(comps[c])
+        comps = comps_new
+
+
 
 if __name__=='__main__':
     from networkx import parse_graph6
