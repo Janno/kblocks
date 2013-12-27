@@ -190,33 +190,42 @@ class Tree(object):
         self.children = children
     def is_leaf(self):
         return len(self.children) == 0
+    def all_children(self):
+        if tag:
+            yield tag
+        for c in self.children:
+            for c_ in c.all_children():
+                yield c_
+    def __repr__(self):
+        return '%s(%s, %s)' % (self.__class__.__name__, self.tag, self.children)
 
 def maotree(g, m):
-    # TODO fix this ****
-    from networkx import Graph
-    t = Tree()
-    g_ = Graph()
-    comps = []
-    comp_of = {}
-    for i, u in reversed(enumerate(m)):
-        t = Tree(u, comps)
-        merge = set()
-        for v in g[u]:
-            if v in g_:
-                g_.add_edge(u,v)
-                merge.add(comp_of(v))
-        comps_new = [[u,],]
-        comp_of[u] = 0
-        for c in merge:
-            comps_new[0].extend(comps[c])
-            for v in comps[c]:
-                comp_of[v] = 0
-        for c in set(xrange(len(comps))) - merge:
-            for v in comps[c]:
-                comp_of[v] = len(comps_new)
-            comps_new.append(comps[c])
-        comps = comps_new
+    from networkx import Graph, connected_components
+    if len(m) == 0:
+        return None
 
+    T = Tree(None, [])
+    todo = [(T, m[:])]
+    while todo:
+        t, m = todo.pop(0)
+        u = m.pop(0)
+        t.tag = u
+        if not m:
+            continue
+        g_ = Graph()
+        g_.add_nodes_from(u for u in m)
+        g_.add_edges_from(((u,v) for u,v in g.edges() if (u in m and v in m)))
+        print u, g_.edges()
+        cs = connected_components(g_)
+        print cs
+        ms = [[] for c in cs]
+        for v in m: 
+            for i, c in enumerate(cs):
+                if v in c:
+                    ms[i].append(v)    
+        t.children = [Tree(None, []) for c in cs]
+        todo.extend(zip(t.children, ms))
+    return T
 
 
 if __name__=='__main__':
