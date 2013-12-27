@@ -205,9 +205,9 @@ def maotree(g, m):
         return None
 
     T = Tree(None, [])
-    todo = [(T, m[:])]
+    todo = [(T, m[:], g)]
     while todo:
-        t, m = todo.pop(0)
+        t, m, g = todo.pop(0)
         u = m.pop(0)
         t.tag = u
         if not m:
@@ -215,16 +215,14 @@ def maotree(g, m):
         g_ = Graph()
         g_.add_nodes_from(u for u in m)
         g_.add_edges_from(((u,v) for u,v in g.edges() if (u in m and v in m)))
-        print u, g_.edges()
         cs = connected_components(g_)
-        print cs
         ms = [[] for c in cs]
         for v in m: 
             for i, c in enumerate(cs):
                 if v in c:
                     ms[i].append(v)    
         t.children = [Tree(None, []) for c in cs]
-        todo.extend(zip(t.children, ms))
+        todo.extend(((t, m, g_) for t,m in zip(t.children, ms)))
     return T
 
 
