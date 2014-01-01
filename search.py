@@ -1,7 +1,8 @@
-"""Usage: search.py [-p]
+"""Usage: search.py [-p] [-d]
 
 Options:
     -p, --progress      Print absolute progress about once every 5 seconds
+    -d, --dot           Print one dot for each graph processed
     -h, --help          Show this
 """
 from networkx.generators.random_graphs import gnm_random_graph
@@ -184,12 +185,13 @@ def single_maos_connected_kb1p32(g6):
         return {'g':g6, 'd':d, 'k':k}
 
 def main(argv):
-    from sys import stdin
+    from sys import stdin, stderr
     opts = docopt(__doc__, argv=argv)
 
     from time import clock
     t = clock()
     p = opts['--progress']
+    tot = 0
     for i, g6_ in enumerate(stdin):
         g6 = g6_.strip()
         x = single_ALL_mao_kp1b(g6)
@@ -197,9 +199,12 @@ def main(argv):
             print x
         if p and clock()-t > 5:
             t = clock()
-            print '\r', i,
+            print >>stderr, '\r', i,
+        if opts['--dot']:
+            stderr.write('.')
+        tot = i
     if p:
-        print '\r', i
+        print >>stderr, '\r', tot
 
     
 
