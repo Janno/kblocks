@@ -13,7 +13,7 @@ from docopt import docopt
 from itertools import permutations, combinations
 from math import ceil
 
-from mao import mao, is_mao, all_maos
+from mao import mao, is_mao, all_maos, maotree
 
 
 def certify_non_kblock(g, block, k):
@@ -184,6 +184,51 @@ def single_maos_connected_kb1p32(g6):
     if not starters:
         return {'g':g6, 'd':d, 'k':k}
 
+#  Mao Trees (first mao)
+def maotree_all_kblock(g6):
+    g = parse_graph6(g6)
+    d = min(g.degree().viewvalues())
+    # or d > 3k/2 - 1
+    k = int(ceil(2 * ((d+1) / 3.0)) - 1)
+    m = mao(g,0)
+    t = maotree(g,m)
+    result = None
+    for p in t.paths():
+        if len(p) >= k:
+            # print p
+            result = certify_non_kblock(g, p[-(k+1):], k)
+            if result:
+                break
+    if result:
+        result['g'] = g6
+        result['k'] = k
+        result['d'] = d
+        return result
+
+#  Mao Trees all_maos
+def all_maotrees_all_kblock(g6):
+    g = parse_graph6(g6)
+    d = min(g.degree().viewvalues())
+    # or d > 3k/2 - 1
+    k = int(ceil(2 * ((d+1) / 3.0)) - 1)
+    for m in all_maos(g):
+        m_ = list(m)
+        t = maotree(g, m_)
+        result = None
+        for p in t.paths():
+            if len(p) >= k:
+                # print p
+                result = certify_non_kblock(g, p[-(k+1):], k)
+                if result:
+                    break
+        if result:
+            break
+    if result:
+        result['g'] = g6
+        result['k'] = k
+        result['d'] = d
+        return result
+
 def main(argv):
     from sys import stdin, stderr
     opts = docopt(__doc__, argv=argv)
@@ -194,7 +239,7 @@ def main(argv):
     tot = 0
     for i, g6_ in enumerate(stdin):
         g6 = g6_.strip()
-        x = single_ALL_mao_kp1b(g6)
+        x = all_maotrees_all_kblock(g6)
         if x:
             print x
         if p and clock()-t > 5:

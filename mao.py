@@ -190,6 +190,12 @@ class Tree(object):
         self.children = children
     def is_leaf(self):
         return len(self.children) == 0
+    def paths(self):
+        for c in self.children:
+            for p in c.paths():
+                yield (self.tag,) + p
+        if not self.children:
+            yield (self.tag,)
     def all_children(self):
         if tag:
             yield tag
@@ -201,28 +207,28 @@ class Tree(object):
 
 def maotree(g, m):
     from networkx import Graph, connected_components
+    from itertools import chain
     if len(m) == 0:
         return None
 
     T = Tree(None, [])
-    todo = [(T, m[:], g)]
+    # broken
+    o = dict((v,i) for i,v in enumerate(m))
+    todo = [(T, m[:])]
     while todo:
-        t, m, g = todo.pop(0)
-        u = m.pop(0)
-        t.tag = u
+        t, m = todo.pop(0)
+        x = m.pop(0)
+        t.tag = x
         if not m:
             continue
         g_ = Graph()
-        g_.add_nodes_from(u for u in m)
-        g_.add_edges_from(((u,v) for u,v in g.edges() if (u in m and v in m)))
+        g_.add_edges_from(( (u,v) for u,v in g.edges_iter() if o[u] > o[x] and o[v] > o[x] ))
+        g_.add_nodes_from(m)
         cs = connected_components(g_)
-        ms = [[] for c in cs]
-        for v in m: 
-            for i, c in enumerate(cs):
-                if v in c:
-                    ms[i].append(v)    
+        for c in cs:
+            c.sort(key=o.get)
         t.children = [Tree(None, []) for c in cs]
-        todo.extend(((t, m, g_) for t,m in zip(t.children, ms)))
+        todo.extend(zip(t.children, cs))
     return T
 
 
