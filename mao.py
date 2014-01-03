@@ -212,23 +212,35 @@ def maotree(g, m):
         return None
 
     T = Tree(None, [])
-    # broken
+    # node -> index in mao
     o = dict((v,i) for i,v in enumerate(m))
-    todo = [(T, m[:])]
+    # list of edges (u,v) with o[u] <= o[v]
+    e = [(u,v) if o[u] <= o[v] else (v,u) for u,v in g.edges()]
+    # we sort e w.r.t. to o such that we can disregard the entire prefix
+    # up to the first pair (u,v) with o[u] >= o[current node]
+    e.sort(key=lambda (u,v): (o[u], o[v]))
+    # todo is a tuple of the current tree node,
+    # the remaining mao to process and
+    # the offset of the edges to be considered in the
+    # edge list e
+    todo = [(T, m[:], 0)]
     while todo:
-        t, m = todo.pop(0)
+        t, m, i = todo.pop(0)
         x = m.pop(0)
         t.tag = x
         if not m:
             continue
+        while i < len(e) and o[e[i][0]] <= o[x]:
+            i = i+1
         g_ = Graph()
-        g_.add_edges_from(( (u,v) for u,v in g.edges_iter() if o[u] > o[x] and o[v] > o[x] ))
+        for (u,v) in e[i:]:
+            g_.add_edge(u,v)
         g_.add_nodes_from(m)
         cs = connected_components(g_)
         for c in cs:
             c.sort(key=o.get)
         t.children = [Tree(None, []) for c in cs]
-        todo.extend(zip(t.children, cs))
+        todo.extend(zip(t.children, cs, (i for c in cs)))
     return T
 
 
