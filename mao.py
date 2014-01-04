@@ -38,9 +38,7 @@ class MaoState(object):
             self.hi = self.hi - 1
 
     def push(self, u):
-        # TODO this is at least O(m log m) and it is called O(n) times. fook.
-        # TODO why do I even sort this?
-        for v in sorted(self.g[u], key=self.V.get, reverse=True):
+        for v in self.g[u]:
             # print '\tneighbour', v
             if not v in self.V:
                 continue
