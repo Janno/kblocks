@@ -93,15 +93,16 @@ class MaoState(object):
 def all_maos(g):
     # list of pairs of ((partial) mao, state)
     if len(g) == 0:
-        yield ()
+        yield []
     else: 
-        todo = [((), MaoState(g)),]
+        todo = [([], MaoState(g)),]
         while todo:
             m, s = todo.pop()
             for c in s.candidates():
                 s_ = s.copy()
                 v = s_.step(c)
-                m_ = m+(v,)
+                m_ = list(m) 
+                m_.append(v)
                 if len(m_) == len(g):
                     yield m_ 
                 else:
@@ -205,7 +206,6 @@ class Tree(object):
 
 def maotree(g, m):
     from networkx import Graph, connected_components
-    from itertools import chain
     if len(m) == 0:
         return None
 
@@ -221,26 +221,26 @@ def maotree(g, m):
     # the remaining mao to process and
     # the offset of the edges to be considered in the
     # edge list e
-    todo = [(T, m[:], 0)]
-    while todo:
-        t, m, i = todo.pop(0)
-        x = m.pop(0)
+    todo = [(T, m, 0)]
+    while len(todo):
+        t, m, i = todo.pop()
+        # x = m.pop(0)
+        x = m[0]
         t.tag = x
-        if not m:
+        if len(m) <= 1:
             continue
         while i < len(e) and o[e[i][0]] <= o[x]:
             i = i+1
         g_ = Graph()
         for (u,v) in e[i:]:
             g_.add_edge(u,v)
-        g_.add_nodes_from(m)
+        g_.add_nodes_from(m[1:])
         cs = connected_components(g_)
         for c in cs:
             c.sort(key=o.get)
         t.children = [Tree(None, []) for c in cs]
         todo.extend(zip(t.children, cs, (i for c in cs)))
     return T
-
 
 if __name__=='__main__':
     from networkx import parse_graph6
