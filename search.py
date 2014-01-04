@@ -205,16 +205,42 @@ def maotree_all_kblock(g6):
         result['d'] = d
         return result
 
+def all_maotrees_have_kblock(g6):
+    g = parse_graph6(g6)
+    d = min(g.degree().viewvalues())
+    # or d > 3k/2 - 1
+    k = int(ceil(2 * ((d+1) / 3.0)) - 1)
+    result = {}
+    for m in all_maos(g):
+        m_ = list(m)
+        t = maotree(g, m_)
+        found = False
+        for p in t.paths():
+            if len(p) >= k:
+                # print p
+                kblock = certify_non_kblock(g, p[-(k+1):], k)
+                if not kblock:
+                    found = True
+        if not found:
+            result['m'] = m
+            result['t'] = t
+            break
+    if result:
+        result['g'] = g6
+        result['k'] = k
+        result['d'] = d
+        return result
+
 #  Mao Trees all_maos
 def all_maotrees_all_kblock(g6):
     g = parse_graph6(g6)
     d = min(g.degree().viewvalues())
     # or d > 3k/2 - 1
     k = int(ceil(2 * ((d+1) / 3.0)) - 1)
+    result = None
     for m in all_maos(g):
         m_ = list(m)
         t = maotree(g, m_)
-        result = None
         for p in t.paths():
             if len(p) >= k:
                 # print p
@@ -239,7 +265,7 @@ def main(argv):
     tot = 0
     for i, g6_ in enumerate(stdin):
         g6 = g6_.strip()
-        x = all_maotrees_all_kblock(g6)
+        x = all_maotrees_have_kblock(g6)
         if x:
             print x
         if p and clock()-t > 5:
