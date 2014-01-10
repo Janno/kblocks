@@ -205,7 +205,7 @@ class Tree(object):
     def __repr__(self):
         return '%s(%s, %s)' % (self.__class__.__name__, self.tag, self.children)
 
-def maotree(g, m):
+def maotree_old(g, m):
     from networkx import Graph, connected_components
     from itertools import chain
     if len(m) == 0:
@@ -231,6 +231,51 @@ def maotree(g, m):
         todo.extend(zip(t.children, cs))
     return T
 
+def maotree(g,m):
+    if not m:
+        return None
+    return maotree2_aux(g,map(Tree, m),len(m)-1)
+def maotree2_aux(g,mts,k):
+    T = mts[k]
+    X = set([T.tag])
+    i = k
+    while i > 0:
+        S = mts[i-1]
+        to_X = set(g[S.tag]) & X
+        if not to_X:
+            break
+        X.add(S.tag)
+        S.children.insert(0, T)
+        T = S
+        i = i-1
+    j = i-2
+    # print k, i
+
+    while j >= 0:
+        if set(g[mts[j].tag]) & X:
+            break
+        j = j-1 
+
+    if j >= 0:
+        mts[j].children.append(T)
+
+    if i == 0:
+        return mts[0]
+    else:
+        return maotree2_aux(g,mts,k=i-1)
+        
+
+
+def check_maos_corret(g):
+    m1 = list(all_maos(g))
+    m2 = list(all_maos_slow(g))
+    m1.sort()
+    m2.sort()
+    if not set(m1) == set(m2):
+        print l
+        print len(m1)
+        print len(m2)
+
 
 if __name__=='__main__':
     from networkx import parse_graph6
@@ -239,12 +284,9 @@ if __name__=='__main__':
     for l_ in stdin:
         l = l_.strip()
         g = parse_graph6(l)
-        m1 = list(all_maos(g))
-        m2 = list(all_maos_slow(g))
-        m1.sort()
-        m2.sort()
-        if not set(m1) == set(m2):
-            print l
-            print len(m1)
-            print len(m2)
+        # check_maos(g)
+        m = mao(g,0)
+        print m
+        print maotree_old(g,m)
+        print maotree(g,m)
 

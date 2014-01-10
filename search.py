@@ -230,7 +230,7 @@ def all_maotrees_all_kblock(g6):
         return result
 
 def main(argv):
-    from sys import stdin, stderr
+    from sys import stdin, stdout, stderr
     opts = docopt(__doc__, argv=argv)
 
     from time import clock
@@ -241,12 +241,12 @@ def main(argv):
         g6 = g6_.strip()
         x = all_maotrees_all_kblock(g6)
         if x:
-            print x
+            print >>stderr, x
         if p and clock()-t > 5:
             t = clock()
             print >>stderr, '\r', i,
         if opts['--dot']:
-            stderr.write('.')
+            stdout.write('.')
         tot = i
     if p:
         print >>stderr, '\r', tot
