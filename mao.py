@@ -38,9 +38,7 @@ class MaoState(object):
             self.hi = self.hi - 1
 
     def push(self, u):
-        # TODO this is at least O(m log m) and it is called O(n) times. fook.
-        # TODO why do I even sort this?
-        for v in sorted(self.g[u], key=self.V.get, reverse=True):
+        for v in self.g[u]:
             # print '\tneighbour', v
             if not v in self.V:
                 continue
@@ -95,15 +93,16 @@ class MaoState(object):
 def all_maos(g):
     # list of pairs of ((partial) mao, state)
     if len(g) == 0:
-        yield ()
+        yield []
     else: 
-        todo = [((), MaoState(g)),]
+        todo = [([], MaoState(g)),]
         while todo:
             m, s = todo.pop()
             for c in s.candidates():
                 s_ = s.copy()
                 v = s_.step(c)
-                m_ = m+(v,)
+                m_ = list(m) 
+                m_.append(v)
                 if len(m_) == len(g):
                     yield m_ 
                 else:
@@ -207,28 +206,40 @@ class Tree(object):
 
 def maotree_old(g, m):
     from networkx import Graph, connected_components
-    from itertools import chain
     if len(m) == 0:
         return None
 
     T = Tree(None, [])
-    # broken
+    # node -> index in mao
     o = dict((v,i) for i,v in enumerate(m))
-    todo = [(T, m[:])]
-    while todo:
-        t, m = todo.pop(0)
-        x = m.pop(0)
+    # list of edges (u,v) with o[u] <= o[v]
+    e = [(u,v) if o[u] <= o[v] else (v,u) for u,v in g.edges()]
+    # we sort e w.r.t. to o such that we can disregard the entire prefix
+    # up to the first pair (u,v) with o[u] >= o[current node]
+    e.sort(key=lambda (u,v): (o[u], o[v]))
+    # todo is a tuple of the current tree node,
+    # the remaining mao to process and
+    # the offset of the edges to be considered in the
+    # edge list e
+    todo = [(T, m, 0)]
+    while len(todo):
+        t, m, i = todo.pop()
+        # x = m.pop(0)
+        x = m[0]
         t.tag = x
-        if not m:
+        if len(m) <= 1:
             continue
+        while i < len(e) and o[e[i][0]] <= o[x]:
+            i = i+1
         g_ = Graph()
-        g_.add_edges_from(( (u,v) for u,v in g.edges_iter() if o[u] > o[x] and o[v] > o[x] ))
-        g_.add_nodes_from(m)
+        for (u,v) in e[i:]:
+            g_.add_edge(u,v)
+        g_.add_nodes_from(m[1:])
         cs = connected_components(g_)
         for c in cs:
             c.sort(key=o.get)
         t.children = [Tree(None, []) for c in cs]
-        todo.extend(zip(t.children, cs))
+        todo.extend(zip(t.children, cs, (i for c in cs)))
     return T
 
 def maotree(g,m):
